@@ -1,30 +1,34 @@
-#ifndef _BASE64_H
-#define _BASE64_H
+#ifndef _XXTEA_H
+#define _XXTEA_H
 
 class XXTEA {
 
 	private:
 
-		long* key; //variabile che conterrà la chiave
+		static const unsigned long DELTA = 0x9E3779B9;
+
+		long key[4]; //variabile che conterrà la chiave
 
 		long pow_long(long b, long e); //metodo usato per calcolare le potenze
 
 		long strToLongSize(char* s); //restituisce la dimensione dell'array di long
 
-		long longToStrSize(long* v, long l); //restituisce la dimensione della stringa
+		long longToStrSize(long* v, int l); //restituisce la dimensione della stringa
 
-		void longToStr(char* s, long* v, long l); //converte array v di long in stringa
+		void longToStr(char* s, long* v, int l, int w); //converte array v di long in stringa
 
-		void strToLong(long* v, char* s); //converte la stringa s in array di long
+		void strToLong(long* v, char* s, int w); //converte la stringa s in array di long
 
-		long int32(long n); //fa in modo che non ci siano overflow durante le operazioni 
+		void encryptArray(long* v, int l); //critta array di long
+
+		void decryptArray(long* v, int l); //decritta array di long
 
 	public:
 		XXTEA(char* k); //costruttore usato per settare la chiave
 
 		void encrypt(char* s); //metodo uasato per crittare un messaggio
 
-		void decrypt(char* s); //metodo usato per decrittare la stringa
+		void decrypt(char* s); //metodo usato per decrittare il messaggio
 
 };
 
