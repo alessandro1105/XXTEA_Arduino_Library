@@ -16,6 +16,7 @@
 
 #include "XXTEA.h"
 #include <string.h>
+#include <Arduino.h>
 
 
 //---PUBLIC INTERFACE---
@@ -38,7 +39,7 @@ int XXTEA::encrypt(char *str) {
 
   int size = str2LongSize(str) +1; //dimension of the long vector
 
-  long v[size]; //instatiate the long vector with the right size
+  uint32_t v[size]; //instatiate the long vector with the right size
 
   str2Long(v, str, 1); //convert the string into long
 
@@ -53,7 +54,7 @@ int XXTEA::decrypt(char *str) {
 
   int size = str2LongSize(str);
 
-  long v[size]; //creo array per contenere la stringa
+  uint32_t v[size]; //creo array per contenere la stringa
 
   str2Long(v, str, 0); //converto la stringa in long
 
@@ -67,9 +68,9 @@ int XXTEA::decrypt(char *str) {
 //---PRIVATE INTERFACE---
 
 //metod used to calculate powers
-long XXTEA::pow(long base, long exp) {
+uint32_t XXTEA::pow(uint32_t base, uint32_t exp) {
   
-  long result = 1;
+  uint32_t result = 1;
 
   for (int i = 0; i < exp; i++) 
     result *= base;
@@ -78,83 +79,61 @@ long XXTEA::pow(long base, long exp) {
 }
 
 //metod that returns the dimension of the array to store the string converted into long
-long XXTEA::str2LongSize(char *str) {
+uint32_t XXTEA::str2LongSize(char *str) {
   return strlen(str) % 4 == 0 ? strlen(str) / 4 : strlen(str) / 4 + 1;
 }
 
 //method that returns the length of the string deconverted from the array of long
-long XXTEA::long2StrSize(int len) {
+uint32_t XXTEA::long2StrSize(int len) {
   return len * 4;
 }
 
 //method that ciphers the given array of long using XXTEA algorithm
-void XXTEA::encryptArray(long *v, int l) {
+void XXTEA::encryptArray(uint32_t *v, int n) {
 
-  long z = v[l -1];
-  long y = v[0];
+  uint32_t y, z, sum;
+  unsigned p, rounds, e;
 
-  long q = 6 + 52 / l;
-  long sum = 0;
-
-  long p;
-
-  while (q-- > 0) {
+  rounds = 6 + 52/n;
+  sum = 0;
+  z = v[n-1];
+  do {
     sum += DELTA;
-    long e = sum >> 2 & 3;
-
-    for (p = 0; p < l -1; p++) {
-      y = v[p +1];
-      long mx = ((z >> 5 & 0x07FFFFFF) ^ y << 2) + ((y >> 3 & 0x1FFFFFFF) ^ z << 4) ^ ((sum ^ y) + (_key[p & 3 ^ e] ^ z));
-      z = v[p] = v[p] + mx;
+    e = (sum >> 2) & 3;
+    for (p=0; p<n-1; p++) {
+      y = v[p+1]; 
+      z = v[p] += MX;
     }
-
     y = v[0];
-    long mx = ((z >> 5 & 0x07FFFFFF) ^ y << 2) + ((y >> 3 & 0x1FFFFFFF) ^ z << 4) ^ ((sum ^ y) + (_key[p & 3 ^ e] ^ z));
-    z = v[l -1] = v[l -1] + mx;
-
-  }
+    z = v[n-1] += MX;
+  } while (--rounds);
 
 }
 
 //method that deciphers the given array of long using XXTEA algorithm
-void XXTEA::decryptArray(long *v, int l) {
+void XXTEA::decryptArray(uint32_t *v, int n) {
 
-  long z = v[l -1];
-  long y = v[0];
+  uint32_t y, z, sum;
+  unsigned p, rounds, e;
 
-  long q = 6 + 52 / l;
-  long sum = q * DELTA;
-
-  long p;
-
-  while (sum != 0) {
-    long e = sum >> 2 & 3;
-
-    for (p = l -1; p > 0; p--) {
-      z = v[p - 1];
-
-      long mx1 = ((z >> 5 & 0x07FFFFFF) ^ y << 2) + ((y >> 3 & 0x1FFFFFFF) ^ z << 4);
-      long mx2 = (sum ^ y) + (_key[p & 3 ^ e] ^ z);
-      long mx = mx1^ mx2;
-
-      y = v[p] -= mx;
+  rounds = 6 + 52/n;
+  sum = rounds*DELTA;
+  y = v[0];
+  do {
+    e = (sum >> 2) & 3;
+    for (p=n-1; p>0; p--) {
+      z = v[p-1];
+      y = v[p] -= MX;
     }
-
-    z = v[l -1];
-
-    long mx1 = ((z >> 5 & 0x07FFFFFF) ^ y << 2) + ((y >> 3 & 0x1FFFFFFF) ^ z << 4);
-    long mx2 = (sum ^ y) + (_key[p & 3 ^ e] ^ z);
-    long mx = mx1^ mx2;
-
-    y = v[0] -= mx;
+    z = v[n-1];
+    y = v[0] -= MX;
     sum -= DELTA;
-
-  }
+  } while (--rounds);
 
 }
 
 //method that converts the array of long into a string, it stores the string into the array of long passed
-void XXTEA::long2Str(char *s, long *v, int l, int w) {
+void XXTEA::long2Str(char *s, uint32_t *v, int l, int w) {
 
   int length = long2StrSize(l);
 
@@ -162,7 +141,7 @@ void XXTEA::long2Str(char *s, long *v, int l, int w) {
     int index = i / 4;
     int esp = i % 4;
 
-    long c;
+    uint32_t c;
 
     if (esp +1 == 4) {
       c = v[index];
@@ -198,7 +177,7 @@ void XXTEA::long2Str(char *s, long *v, int l, int w) {
 }
 
 //method that converts the string into long, it stores the converted string into the array of long passed
-void XXTEA::str2Long(long *v, char *s, int w) {
+void XXTEA::str2Long(uint32_t *v, char *s, int w) {
 	
   int size = strlen(s);
 
@@ -206,7 +185,7 @@ void XXTEA::str2Long(long *v, char *s, int w) {
     int index = i / 4;
 	  int esp = i % 4;
 
-    long c = (long) s[i];
+    uint32_t c = (uint32_t) s[i];
 
     //c is negative
     if (c < 0) {

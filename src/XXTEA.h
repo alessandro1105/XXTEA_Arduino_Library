@@ -17,8 +17,11 @@
 #ifndef XXTEA_H
 #define XXTEA_H
 
+#include <Arduino.h>
+
 //delta neded to XXTEA algorithm
 #define DELTA 0x9E3779B9
+#define MX (((z>>5^y<<2) + (y>>3^z<<4)) ^ ((sum^y) + (_key[(p&3)^e] ^ z)))
 
 
 //class XXTEA
@@ -39,28 +42,28 @@ class XXTEA {
 	private:
 
 		//metod used to calculate powers
-		long pow(long base, long exp);
+		uint32_t pow(uint32_t base, uint32_t exp);
 
 		//method that ciphers the given array of long using XXTEA algorithm
-		void encryptArray(long *v, int l);
+		void encryptArray(uint32_t *v, int l);
 
 		//method that deciphers the given array of long using XXTEA algorithm
-		void decryptArray(long *v, int l);
+		void decryptArray(uint32_t *v, int l);
 
 		//metod that returns the dimension of the array to store the string converted into long
-		long str2LongSize(char *str);
+		uint32_t str2LongSize(char *str);
 
 		//method that returns the length of the string deconverted from the array of long
-		long long2StrSize(int len);
+		uint32_t long2StrSize(int len);
 
 		//method that converts the array of long into a string, it stores the string into the array of long passed
-		void long2Str(char* s, long* v, int l, int w);
+		void long2Str(char* s, uint32_t* v, int l, int w);
 
 		//method that converts the string into long, it stores the converted string into the array of long passed
-		void str2Long(long* v, char* s, int w); //converte la stringa s in array di long
+		void str2Long(uint32_t* v, char* s, int w); //converte la stringa s in array di long
 
 		//key used to cipher/decipher
-		long _key[4];
+		uint32_t _key[4];
 
 };
 
