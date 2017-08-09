@@ -22,45 +22,59 @@
 //---PUBLIC INTERFACE---
 
 //costructor of the class
-XXTEA::XXTEA(char *key) { //key must be length at maximun 16 characters
+XXTEA::XXTEA(char *key, size_t len) { //key must be length at maximun 16 characters
 
-  //conversion of the given key to array of long
-	str2Long(_key, key, 0);
+  //if the string key is larger of 16 charcters it will be truncated to 16
+  if (len >= 16) {
+    str2Long(_key, key, 16, 0);
+  } else {
+    str2Long(_key, key, len, 0);
 
-  //if the converted key uses less than 4 long, the remanaining ones are set to 0
-  for (int i = str2LongSize(key); i < 4; i++) {
-    _key[i] = 0;
+    //if the converted key uses less than 4 long, the remanaining ones are set to 0
+    for (int i = str2LongSize(len); i < 4; i++) {
+      _key[i] = 0;
+    }
   }
+
 
 }
 
 //metodo uasato per crittare un messaggio
-int XXTEA::encrypt(char *str) {
+size_t XXTEA::encrypt(char *str, size_t len, char *buffer, size_t buff_size) {
 
-  int size = str2LongSize(str) +1; //dimension of the long vector
+  //if the buffer size is too small
+  if (buff_size < long2StrSize(str2LongSize(len) +1) +1) {
+    return 0;
+  }
+
+  size_t size = str2LongSize(len) +1; //dimension of the long vector
 
   uint32_t v[size]; //instatiate the long vector with the right size
 
-  str2Long(v, str, 1); //convert the string into long
+  str2Long(v, str, len, 1); //convert the string into long
 
   encryptArray(v, size); //chipher the vector
 
-  long2Str(str, v, size, 0); //vector to string
+  return long2Str(buffer, v, size, 0); //vector to string
 
 }
 
 //metodo usato per decrittare il messaggio
-int XXTEA::decrypt(char *str) {
+size_t XXTEA::decrypt(char *str, size_t len, char *buffer, size_t buff_size) {
 
-  int size = str2LongSize(str);
+  if (buff_size < len -3) {
+    return 0;
+  }
+
+  int size = str2LongSize(len);
 
   uint32_t v[size]; //creo array per contenere la stringa
 
-  str2Long(v, str, 0); //converto la stringa in long
+  str2Long(v, str, len, 0); //converto la stringa in long
 
   decryptArray(v, size); //decritto il vettore
 
-  long2Str(str, v, size, 1);
+  return long2Str(buffer, v, size, 1);
 
 }
 
@@ -68,7 +82,7 @@ int XXTEA::decrypt(char *str) {
 //---PRIVATE INTERFACE---
 
 //metod used to calculate powers
-uint32_t XXTEA::pow(uint32_t base, uint32_t exp) {
+uint32_t XXTEA::pow(uint16_t base, uint8_t exp) {
   
   uint32_t result = 1;
 
@@ -79,17 +93,17 @@ uint32_t XXTEA::pow(uint32_t base, uint32_t exp) {
 }
 
 //metod that returns the dimension of the array to store the string converted into long
-uint32_t XXTEA::str2LongSize(char *str) {
-  return strlen(str) % 4 == 0 ? strlen(str) / 4 : strlen(str) / 4 + 1;
+size_t XXTEA::str2LongSize(size_t len) {
+  return len % 4 == 0 ? len/4 : len/4 + 1;
 }
 
 //method that returns the length of the string deconverted from the array of long
-uint32_t XXTEA::long2StrSize(int len) {
+size_t XXTEA::long2StrSize(size_t len) {
   return len * 4;
 }
 
 //method that ciphers the given array of long using XXTEA algorithm
-void XXTEA::encryptArray(uint32_t *v, int n) {
+void XXTEA::encryptArray(uint32_t *v, size_t n) {
 
   uint32_t y, z, sum;
   unsigned p, rounds, e;
@@ -111,7 +125,7 @@ void XXTEA::encryptArray(uint32_t *v, int n) {
 }
 
 //method that deciphers the given array of long using XXTEA algorithm
-void XXTEA::decryptArray(uint32_t *v, int n) {
+void XXTEA::decryptArray(uint32_t *v, size_t n) {
 
   uint32_t y, z, sum;
   unsigned p, rounds, e;
@@ -133,7 +147,7 @@ void XXTEA::decryptArray(uint32_t *v, int n) {
 }
 
 //method that converts the array of long into a string, it stores the string into the array of long passed
-void XXTEA::long2Str(char *s, uint32_t *v, int l, int w) {
+size_t XXTEA::long2Str(char *s, uint32_t *v, int l, int w) {
 
   int length = long2StrSize(l);
 
@@ -153,44 +167,39 @@ void XXTEA::long2Str(char *s, uint32_t *v, int l, int w) {
     if (esp > 0) {
     		c = c / pow(256, esp); 
   	}
-
-    //c is negative
-    if (c < 0) {
-      c = 0xFFFFFFFF - c;
-      c = 0xFF - c;
-
-      if (esp != 0) { //if is not the first character
-        c = c -1;
-      }
-    }
     
   	s[i] = (char) c;
     
   }
 
   if (w) {
+    //error the len of the decrypted string is major of the maximum
+    if (v[l-1] > length) {
+      return 0;
+    }
+
     length = v[l -1];
   }
   
 	s[length] = '\0';
 
+  return length;
+
 }
 
 //method that converts the string into long, it stores the converted string into the array of long passed
-void XXTEA::str2Long(uint32_t *v, char *s, int w) {
-	
-  int size = strlen(s);
+void XXTEA::str2Long(uint32_t* v, char* s, size_t len, uint8_t w) {
 
-	for (int i = 0; i < size; i++) {
+	for (int i = 0; i < len; i++) {
     int index = i / 4;
 	  int esp = i % 4;
 
-    uint32_t c = (uint32_t) s[i];
+    uint32_t c;
 
-    //c is negative
-    if (c < 0) {
-      c = 0xFFFFFFFF - c;
-      c = 0xFF - c;
+    if ((int8_t) s[i] < 0) {
+      c = (uint32_t) ((int8_t) s[i] + 256);
+    } else {
+      c = (uint32_t) s[i];
     }
 	    
 	  if (esp == 0) {
@@ -203,7 +212,7 @@ void XXTEA::str2Long(uint32_t *v, char *s, int w) {
 	}
 
   if (w) {
-    v[(size -1) / 4 + 1] = size;
+    v[(len -1) / 4 + 1] = len;
   }
 
 }

@@ -30,37 +30,37 @@ class XXTEA {
 	public:
 
 		//constructor of the class, it requires the key used to cipher the data
-		XXTEA(char *key);
+		XXTEA(char *key, size_t len);
 
 		//method that ciphers the message given
-		int encrypt(char *str);
+		size_t encrypt(char *str, size_t len, char *buffer, size_t buff_size);
 
 		//mathod that decipher the message given
-		int decrypt(char *str);
+		size_t decrypt(char *str, size_t len, char *buffer, size_t buff_size);
 
 
 	private:
 
 		//metod used to calculate powers
-		uint32_t pow(uint32_t base, uint32_t exp);
+		uint32_t pow(uint16_t base, uint8_t exp);
 
 		//method that ciphers the given array of long using XXTEA algorithm
-		void encryptArray(uint32_t *v, int l);
+		void encryptArray(uint32_t *v, size_t n);
 
 		//method that deciphers the given array of long using XXTEA algorithm
-		void decryptArray(uint32_t *v, int l);
+		void decryptArray(uint32_t *v, size_t n);
 
 		//metod that returns the dimension of the array to store the string converted into long
-		uint32_t str2LongSize(char *str);
+		size_t str2LongSize(size_t len);
 
 		//method that returns the length of the string deconverted from the array of long
-		uint32_t long2StrSize(int len);
+		size_t long2StrSize(size_t len);
 
 		//method that converts the array of long into a string, it stores the string into the array of long passed
-		void long2Str(char* s, uint32_t* v, int l, int w);
+		size_t long2Str(char* s, uint32_t* v, int l, int w);
 
 		//method that converts the string into long, it stores the converted string into the array of long passed
-		void str2Long(uint32_t* v, char* s, int w); //converte la stringa s in array di long
+		void str2Long(uint32_t* v, char* s, size_t len, uint8_t w); //converte la stringa s in array di long
 
 		//key used to cipher/decipher
 		uint32_t _key[4];
